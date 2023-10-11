@@ -3,6 +3,7 @@
 #
 cmake_minimum_required( VERSION 3.0 FATAL_ERROR )
 
+
 project( hpcg
     VERSION 3.1
     LANGUAGES CXX
@@ -18,6 +19,7 @@ option(HPCG_ENABLE_DETAILED_DEBUG "Enable detailed debug build" OFF)
 option(HPCG_ENABLE_MPI "Enable MPI support" OFF)
 option(HPCG_ENABLE_LONG_LONG "Enable use of 'long long' type for global indices" ON)
 option(HPCG_ENABLE_OPENMP "Enable OpenMP support" OFF)
+option(USE_PAPI "Enable PAPI NIC counter" OFF)
 
 add_executable( xhpcg src/main.cpp src/CG.cpp src/CG_ref.cpp src/TestCG.cpp
     src/ComputeResidual.cpp src/ExchangeHalo.cpp src/GenerateGeometry.cpp
@@ -34,38 +36,44 @@ add_executable( xhpcg src/main.cpp src/CG.cpp src/CG_ref.cpp src/TestCG.cpp
     src/ComputeOptimalShapeXYZ.cpp src/MixedBaseCounter.cpp
     src/CheckAspectRatio.cpp src/OutputFile.cpp)
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
+if (USE_PAPI)
+	find_package(PAPINetworkEvents REQUIRED)
+	target_compile_definitions(xhpcg PRIVATE "USE_PAPI")
+	target_link_libraries(xhpcg "PAPINetworkEvents::PAPINetworkEvents")
+endif()
+
 if (HPCG_ENABLE_CONTIGUOUS_ARRAYS)
-    target_compile_definitions(xhpcg PRIVATE HPCG_CONTIGUOUS_ARRAYS)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_CONTIGUOUS_ARRAYS")
 endif ()
 
 if (HPCG_ENABLE_CUBIC_RADICAL_SEARCH)
-    target_compile_definitions(xhpcg PRIVATE HPCG_CUBIC_RADICAL_SEARCH)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_CUBIC_RADICAL_SEARCH")
 endif ()
 
 if (HPCG_ENABLE_DEBUG)
-    target_compile_definitions(xhpcg PRIVATE HPCG_DEBUG)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_DEBUG")
 endif ()
 
 if (HPCG_ENABLE_DETAILED_DEBUG)
-    target_compile_definitions(xhpcg PRIVATE HPCG_DETAILED_DEBUG)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_DETAILED_DEBUG")
 endif ()
 
 if (HPCG_ENABLE_MPI)
-    set(MPI_CXX_SKIP_MPICXX ON)
     find_package(MPI REQUIRED)
-    target_link_libraries(xhpcg ${MPI_CXX_LIBRARIES})
+    target_link_libraries(xhpcg "MPI::MPI_CXX")
 else ()
-    target_compile_definitions(xhpcg PRIVATE HPCG_NO_MPI)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_NO_MPI")
 endif ()
 
 if (NOT HPCG_ENABLE_LONG_LONG)
-    target_compile_definitions(xhpcg PRIVATE HPCG_NO_LONG_LONG)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_NO_LONG_LONG")
 endif ()
 
 if (HPCG_ENABLE_OPENMP)
     find_package(OpenMP REQUIRED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    target_link_libraries(xhpcg ${OpenMP_CXX_LIBRARIES})
+    target_link_libraries(xhpcg "OpenMP::OpenMP_CXX")
 else ()
-    target_compile_definitions(xhpcg PRIVATE HPCG_NO_OPENMP)
+    target_compile_definitions(xhpcg PRIVATE "HPCG_NO_OPENMP")
 endif ()

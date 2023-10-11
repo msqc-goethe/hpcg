@@ -34,7 +34,7 @@ using std::cin;
 using std::endl;
 
 #include <vector>
-
+#include "NetworkEvents.hpp"
 #include "hpcg.hpp"
 
 #include "CheckAspectRatio.hpp"
@@ -314,6 +314,14 @@ int main(int argc, char * argv[]) {
   // Here we finally run the benchmark phase
   // The variable total_runtime is the target benchmark execution time in seconds
 
+#ifdef USE_PAPI
+  papi::network_events::NetworkEvents events;
+  events.add_event_by_name("infiniband:::mlx4_0_1:port_rcv_data");
+  events.add_event_by_name("infiniband:::mlx4_0_1:port_xmit_data");
+  events.add_event_by_name("infiniband:::mlx4_0_1:port_rcv_packets");
+  events.add_event_by_name("infiniband:::mlx4_0_1:port_xmit_packets");
+#endif
+
   double total_runtime = params.runningTime;
   int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
 
@@ -325,6 +333,12 @@ int main(int argc, char * argv[]) {
 #endif
 
   /* This is the timed run for a specified amount of time. */
+
+#ifdef USE_PAPI
+  if(rank == 0){
+  	events.start_measurement();
+  }
+#endif
 
   optMaxIters = optNiters;
   double optTolerance = 0.0;  // Force optMaxIters iterations
@@ -351,6 +365,13 @@ int main(int argc, char * argv[]) {
 
   // Test Norm Results
   ierr = TestNorms(testnorms_data);
+
+#ifdef USE_PAPI
+  if(rank == 0){
+  	events.stop_measurement();
+	events.print_values();
+  }
+#endif
 
   ////////////////////
   // Report Results //
