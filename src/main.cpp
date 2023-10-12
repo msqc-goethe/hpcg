@@ -316,11 +316,7 @@ int main(int argc, char * argv[]) {
 
 #ifdef USE_PAPI
   papi::network_events::NetworkEvents events;
-  events.add_event_by_name("infiniband:::mlx4_0_1:port_rcv_data");
-  events.add_event_by_name("infiniband:::mlx4_0_1:port_xmit_data");
-  events.add_event_by_name("infiniband:::mlx4_0_1:port_rcv_packets");
-  events.add_event_by_name("infiniband:::mlx4_0_1:port_xmit_packets");
-#endif
+  #endif
 
   double total_runtime = params.runningTime;
   int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
